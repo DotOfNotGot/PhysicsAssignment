@@ -6,22 +6,22 @@ using UnityEngine.SceneManagement;
 public class MainMenuManager : MonoBehaviour
 {
     public int PlayerCount { get; private set; } = 1;
+    
+    [SerializeField] private GameManager _gameManager;
 
     private Canvas _canvas;
     [SerializeField] private GameObject playerSelectScreen;
     [SerializeField] private GameObject levelSelectScreen;
+
+
+    private int[][] _levelSequences = new int[][]{new int[]{1, 0}};
+
+    private int[] _chosenLevelSequence;
     
     // Start is called before the first frame update
     void Awake()
     {
         _canvas = GetComponent<Canvas>();
-        DontDestroyOnLoad(this);   
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
     }
 
     public void SetPlayerCount(int amount)
@@ -44,8 +44,27 @@ public class MainMenuManager : MonoBehaviour
     public void LoadLevelPack(int index)
     {
         _canvas.enabled = false;
+        _chosenLevelSequence = _levelSequences[0];
+        InitializeGameManager();
+        StartCoroutine(ScreenFadeThenLoad(index));
+    }
+
+    private IEnumerator ScreenFadeThenLoad(int index)
+    {
+        float t = 0.0f;
+        while (t < 1.0f)
+        {
+            yield return new WaitForEndOfFrame();
+            
+            t += Time.deltaTime;
+        }
+        
         SceneManager.LoadScene(index);
     }
-    
+
+    private void InitializeGameManager()
+    {
+        _gameManager.Init(PlayerCount, _chosenLevelSequence);
+    }
     
 }

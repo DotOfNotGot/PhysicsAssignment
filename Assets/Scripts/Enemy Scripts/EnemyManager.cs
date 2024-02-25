@@ -6,12 +6,12 @@ using UnityEngine;
 
 public class EnemyManager : MonoBehaviour
 {
-
     private List<Enemy> _enemies = new List<Enemy>();
+
+    public List<Enemy> DeadEnemies { get; } = new List<Enemy>();
 
     [SerializeField] private GameObject _goalPrefab;
     [SerializeField] private LayerMask _layerMask;
-
 
     [SerializeField] private Vector3 _debugPos;
     
@@ -38,6 +38,22 @@ public class EnemyManager : MonoBehaviour
         
         deadEnemy.OnDeath -= OnEnemyDied;
         _enemies.Remove(deadEnemy);
+        DeadEnemies.Add(deadEnemy);
+    }
+
+    public Dictionary<GolfController, int> GetPlayerScores()
+    {
+        var scores = new Dictionary<GolfController, int>();
+        for (int i = 0; i < DeadEnemies.Count; i++)
+        {
+            var p = DeadEnemies[i].OwnerPlayer;
+            if (!scores.TryAdd(p, 1))
+            {
+                scores[p]++;
+            }
+        }
+
+        return scores;
     }
     
     [ContextMenu("Spawn Goal")]

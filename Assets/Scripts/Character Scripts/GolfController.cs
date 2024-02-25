@@ -143,7 +143,6 @@ public class GolfController : MonoBehaviour
                 isAdditive = false;
             }
             _currentForce = Mathf.Lerp(0.0f, _currentMaxForce, t);
-            // _lineProjection.CalculateTrajectory(_currentForce, Direction, _ballCollider, _ballRb);
             _uiHandler.SetFillAmount(t);
             yield return new WaitForFixedUpdate();
         }
@@ -180,7 +179,7 @@ public class GolfController : MonoBehaviour
     
     public void GetCameraRotationInput(InputAction.CallbackContext context)
     {
-        // Sends the value from this player's input to the camera which is subscribed to the player who's current turn it is.
+        // Sends the rotation value to the camera if it is this controllers turn.
         CameraRotation?.Invoke(context.ReadValue<Vector2>());
     }
 
@@ -225,57 +224,23 @@ public class GolfController : MonoBehaviour
         _lineProjection.LineEnabled(value);
         _uiHandler.SetUIActive(value);
     }
-
     
     private void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("WinTrigger"))
         {
             OnWin?.Invoke(PlayerIndex);
+            _ballRb.detectCollisions = false;
+            _ballRb.isKinematic = true;
         }
         else if (other.CompareTag("Enemy"))
         {
-            other.GetComponent<Enemy>().HandleDeath();
+            other.GetComponent<Enemy>().HandleDeath(this);
         }
     }
 
-    [Header("Debug")]
-    [SerializeField]private Vector3 _debugBumperPos;
-    [SerializeField]private Vector3 _debugBumperNormal;
-    [SerializeField]private Vector3 _debugBumpDir;
-    [SerializeField]private Vector3 _positionAtBump;
-    
-    private bool _hasBumped = false;
-    
     private void OnCollisionEnter(Collision other)
     {
         _audioHandler.PlayHitSound();
-
-        if (other.collider.CompareTag("Bumper"))
-        {
-            // var bumper = other.gameObject.GetComponent<Bumper>();
-            //
-            // Vector3 contactNormal = other.GetContact(0).normal;
-            // var bumpDir = bumper.GetBumpDirection(_ballRb.velocity.normalized, contactNormal);
-            //
-            // _ballRb.velocity = bumpDir;
-            // _debugBumperPos = other.GetContact(0).point;
-            // _debugBumperNormal = contactNormal;
-            // _debugBumpDir = bumpDir.normalized;
-            // _positionAtBump = transform.position;
-            // _hasBumped = true;
-        }
-    }
-
-    private void OnDrawGizmos()
-    {
-        if (_hasBumped)
-        {
-            Gizmos.color = Color.red;
-            Gizmos.DrawRay(_debugBumperPos, _debugBumperPos + _debugBumperNormal);
-            
-            Gizmos.color = Color.green;
-            Gizmos.DrawRay(_positionAtBump, _positionAtBump + _debugBumpDir);
-        }
     }
 }
