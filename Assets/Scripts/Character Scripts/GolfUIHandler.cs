@@ -5,12 +5,18 @@ using UnityEngine.UI;
 
 public class GolfUIHandler : MonoBehaviour
 {
-
     [SerializeField] private Image forceBar;
+    [SerializeField] private Canvas canvas;
     
-    public void SetFillAmount(float value, float maxValue)
+    public void SetFillAmount(float value)
     {
         forceBar.fillAmount = value;
+    }
+
+    public void SetUIActive(bool value)
+    {
+        SetFillAmount(0);
+        canvas.enabled = value;
     }
     
 }

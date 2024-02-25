@@ -11,8 +11,11 @@ public class GolfController : MonoBehaviour
     private LineProjection _lineProjection;
     private Collider _ballCollider;
     private PlayerAudioHandler _audioHandler;
+    private PlayerInput _input;
 
     public event Action<Vector2> CameraRotation;
+    public event Action OnTurnDone;
+    public event Action<int> OnWin;
     
     [SerializeField] private float forceChargeSpeed = 5.0f;
     [SerializeField] private float maxForce = 35.0f;
@@ -25,6 +28,10 @@ public class GolfController : MonoBehaviour
     
     [SerializeField] private float rotationSpeed = 1.0f;
 
+    public int PlayerIndex { get; set; } = 0;
+
+    private int _playerScore = 0;
+    
 
     private float _rotationDirection;
     private Vector3 _directionAngles;
@@ -43,6 +50,8 @@ public class GolfController : MonoBehaviour
     private Vector3 _oldTransformPosition;
     private Vector3 _lastStillPosition;
 
+    private Coroutine _turnEndCoroutine;
+    
     private void Awake()
     {
         _ballRb = GetComponent<Rigidbody>();
@@ -50,6 +59,7 @@ public class GolfController : MonoBehaviour
         _lineProjection = GetComponent<LineProjection>();
         _ballCollider = GetComponent<Collider>();
         _audioHandler = GetComponent<PlayerAudioHandler>();
+        _input = GetComponent<PlayerInput>();
         
         _directionAngles = transform.forward;
         _currentMaxForce = maxForce;
@@ -59,15 +69,37 @@ public class GolfController : MonoBehaviour
     {
         HandleRotationInput();
 
-        if (_hasShot && _ballRb.velocity.magnitude < 0.5f)
+        if (_hasShot && _ballRb.velocity.magnitude < 0.5f && _turnEndCoroutine == null)
         {
-            _ballRb.isKinematic = true;
-            transform.rotation = Quaternion.Euler(_directionAngles);
-            _ballRb.isKinematic = false;
-            _hasShot = false;
+            _turnEndCoroutine = StartCoroutine(TurnEndTimer());
+        }
+
+        if (transform.position.y < -2.0f)
+        {
+            transform.position = _lastStillPosition;
+            TurnEnd();
         }
     }
 
+    private IEnumerator TurnEndTimer()
+    {
+        yield return new WaitForSeconds(1.0f);
+
+        if (_ballRb.velocity.magnitude < 0.5f)
+        {
+            TurnEnd();
+        }
+
+        _turnEndCoroutine = null;
+    }
+
+    private void TurnEnd()
+    {
+        _turnEndCoroutine = null;
+        _hasShot = false;
+        OnTurnDone?.Invoke();
+    }
+    
     private void FixedUpdate()
     {
         // Checks if the player has started charging a shot and if the input to shoot has been received.
@@ -112,7 +144,7 @@ public class GolfController : MonoBehaviour
             }
             _currentForce = Mathf.Lerp(0.0f, _currentMaxForce, t);
             // _lineProjection.CalculateTrajectory(_currentForce, Direction, _ballCollider, _ballRb);
-            _uiHandler.SetFillAmount(t, _currentMaxForce);
+            _uiHandler.SetFillAmount(t);
             yield return new WaitForFixedUpdate();
         }
 
@@ -173,11 +205,33 @@ public class GolfController : MonoBehaviour
         _lineProjection.CalculateTrajectory(_currentMaxForce, Direction, _ballCollider, _ballRb);
     }
 
+    public void StartPlayerTurn()
+    {
+        SetPlayerTurn(true);
+    }
+    public void EndPlayerTurn()
+    {
+        _ballRb.isKinematic = true;
+        transform.rotation = Quaternion.Euler(_directionAngles);
+        _ballRb.isKinematic = false;
+        _hasShot = false;
+        
+        SetPlayerTurn(false);
+    }
+
+    private void SetPlayerTurn(bool value)
+    {
+        _input.enabled = value;
+        _lineProjection.LineEnabled(value);
+        _uiHandler.SetUIActive(value);
+    }
+
+    
     private void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("WinTrigger"))
         {
-            //TODO: WIN.
+            OnWin?.Invoke(PlayerIndex);
         }
         else if (other.CompareTag("Enemy"))
         {
@@ -185,8 +239,43 @@ public class GolfController : MonoBehaviour
         }
     }
 
+    [Header("Debug")]
+    [SerializeField]private Vector3 _debugBumperPos;
+    [SerializeField]private Vector3 _debugBumperNormal;
+    [SerializeField]private Vector3 _debugBumpDir;
+    [SerializeField]private Vector3 _positionAtBump;
+    
+    private bool _hasBumped = false;
+    
     private void OnCollisionEnter(Collision other)
     {
         _audioHandler.PlayHitSound();
+
+        if (other.collider.CompareTag("Bumper"))
+        {
+            // var bumper = other.gameObject.GetComponent<Bumper>();
+            //
+            // Vector3 contactNormal = other.GetContact(0).normal;
+            // var bumpDir = bumper.GetBumpDirection(_ballRb.velocity.normalized, contactNormal);
+            //
+            // _ballRb.velocity = bumpDir;
+            // _debugBumperPos = other.GetContact(0).point;
+            // _debugBumperNormal = contactNormal;
+            // _debugBumpDir = bumpDir.normalized;
+            // _positionAtBump = transform.position;
+            // _hasBumped = true;
+        }
+    }
+
+    private void OnDrawGizmos()
+    {
+        if (_hasBumped)
+        {
+            Gizmos.color = Color.red;
+            Gizmos.DrawRay(_debugBumperPos, _debugBumperPos + _debugBumperNormal);
+            
+            Gizmos.color = Color.green;
+            Gizmos.DrawRay(_positionAtBump, _positionAtBump + _debugBumpDir);
+        }
     }
 }

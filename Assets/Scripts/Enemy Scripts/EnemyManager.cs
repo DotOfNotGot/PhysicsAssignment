@@ -24,12 +24,6 @@ public class EnemyManager : MonoBehaviour
         }
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
-
     private void OnEnemyDied(Enemy deadEnemy)
     {
         if (_enemies.Count == 1)
@@ -52,7 +46,7 @@ public class EnemyManager : MonoBehaviour
         if (Physics.Raycast(_debugPos, Vector3.down, out var raycastHit, 100, _layerMask))
         {
             Debug.Log("Where goal");
-            Instantiate(_goalPrefab, raycastHit.point, _enemies[0].transform.rotation);
+            Instantiate(_goalPrefab, raycastHit.point, transform.rotation);
         }
     }
 

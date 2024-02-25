@@ -81,6 +81,6 @@ public class LineProjection : MonoBehaviour
     public void LineEnabled(bool value)
     {
         _line.enabled = value;
+        _line.positionCount = 0;
     }
-    
 }

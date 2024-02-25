@@ -41,7 +41,6 @@ public class CameraFollow : MonoBehaviour
         _camera = Camera.main;
         _camera.transform.localPosition = new Vector3(transform.position.x, transform.position.y + armLength,
             transform.position.z - armLength);
-        currentGolfController.CameraRotation += HandleRotationInput;
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
     }
@@ -74,7 +73,11 @@ public class CameraFollow : MonoBehaviour
 
     public void ChangeCurrentPlayerController(GolfController newController)
     {
-        currentGolfController.CameraRotation -= HandleRotationInput;
+        if (currentGolfController)
+        {
+            currentGolfController.CameraRotation -= HandleRotationInput;
+        }
+        
         currentGolfController = newController;
         currentGolfController.CameraRotation += HandleRotationInput;
     }
