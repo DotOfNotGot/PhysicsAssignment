@@ -89,6 +89,11 @@ public class CameraFollow : MonoBehaviour
         shouldLerp = true;
     }
 
+    public void SetShouldLerp(bool value)
+    {
+        shouldLerp = value;
+    }
+    
     private void HandleRotationInput(Vector2 value)
     {
         if (value == Vector2.zero) return;

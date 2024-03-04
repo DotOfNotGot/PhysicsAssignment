@@ -24,11 +24,13 @@ public class Enemy : MonoBehaviour
         
     }
 
-    public void HandleDeath(GolfController newOwner)
+    private void OnTriggerEnter(Collider other)
     {
+        if (!other.CompareTag("Player")) return;
+
+        OwnerPlayer = other.GetComponent<GolfController>();
         _meshRenderer.enabled = false;
-        OwnerPlayer = newOwner;
         OnDeath?.Invoke(this);
     }
-    
+
 }

@@ -17,21 +17,19 @@ public class GolfController : MonoBehaviour
     public event Action OnTurnDone;
     public event Action<int> OnWin;
     
+    [Header("Player Attributes")]
     [SerializeField] private float forceChargeSpeed = 5.0f;
     [SerializeField] private float maxForce = 35.0f;
     [SerializeField] private float maxLobForce = 20.0f;
-
-    private float _currentMaxForce = 0.0f;    
-    private float _currentForce = 0.0f;
-    
     [SerializeField, Range(0f, 90f)] private float lobAngle = 45.0f;
     
     [SerializeField] private float rotationSpeed = 1.0f;
+    [SerializeField] private float drag = 1.0f;
+    
+    private float _currentForce = 0.0f;
+    private float _currentMaxForce = 0.0f;    
 
     public int PlayerIndex { get; set; } = 0;
-
-    private int _playerScore = 0;
-    
 
     private float _rotationDirection;
     private Vector3 _directionAngles;
@@ -45,11 +43,15 @@ public class GolfController : MonoBehaviour
     private bool _isChargingShot = false;
     private bool _hasShot = false;
 
+    private bool _turnDone = false;
+
     private Coroutine _forceCoroutine;
 
     private Vector3 _oldTransformPosition;
     private Vector3 _lastStillPosition;
-
+    private Vector3 _spawnPosition;
+    
+    
     private Coroutine _turnEndCoroutine;
     
     private void Awake()
@@ -60,6 +62,8 @@ public class GolfController : MonoBehaviour
         _ballCollider = GetComponent<Collider>();
         _audioHandler = GetComponent<PlayerAudioHandler>();
         _input = GetComponent<PlayerInput>();
+
+        _spawnPosition = transform.position;
         
         _directionAngles = transform.forward;
         _currentMaxForce = maxForce;
@@ -69,6 +73,12 @@ public class GolfController : MonoBehaviour
     {
         HandleRotationInput();
 
+        if (_turnDone)
+        {
+            OnTurnDone?.Invoke();
+            _turnDone = false;
+        }
+        
         if (_hasShot && _ballRb.velocity.magnitude < 0.5f && _turnEndCoroutine == null)
         {
             _turnEndCoroutine = StartCoroutine(TurnEndTimer());
@@ -77,7 +87,11 @@ public class GolfController : MonoBehaviour
         if (transform.position.y < -2.0f)
         {
             transform.position = _lastStillPosition;
-            TurnEnd();
+
+            if (_hasShot)
+            {
+                TurnEnd();
+            }
         }
     }
 
@@ -95,9 +109,13 @@ public class GolfController : MonoBehaviour
 
     private void TurnEnd()
     {
-        _turnEndCoroutine = null;
+        if (_turnEndCoroutine != null)
+        {
+            StopCoroutine(_turnEndCoroutine);
+        }
+        
         _hasShot = false;
-        OnTurnDone?.Invoke();
+        _turnDone = true;
     }
     
     private void FixedUpdate()
@@ -125,8 +143,10 @@ public class GolfController : MonoBehaviour
         else if(_lastStillPosition != transform.position)
         {
             _lastStillPosition = transform.position;
-            _lineProjection.CalculateTrajectory(_currentMaxForce, Direction, _ballCollider, _ballRb);
+            _lineProjection.CalculateTrajectory(_currentMaxForce, Direction, _ballCollider, _ballRb, _shouldLob);
         }
+
+        _ballRb.AddForce(ApplyDrag(_ballRb.velocity, drag));
     }
 
     private IEnumerator ForceCoroutine()
@@ -174,7 +194,16 @@ public class GolfController : MonoBehaviour
         transform.rotation = Quaternion.Euler(_directionAngles);
         
         _currentMaxForce = _shouldLob ? maxLobForce : maxForce;
-        _lineProjection.CalculateTrajectory(_currentMaxForce, Direction, _ballCollider, _ballRb);
+        _lineProjection.CalculateTrajectory(_currentMaxForce, Direction, _ballCollider, _ballRb, _shouldLob);
+    }
+
+    public static Vector3 ApplyDrag(Vector3 vel, float dragConstant)
+    {
+        Vector3 dragDir = -(vel.normalized);
+        float speedSq = vel.sqrMagnitude;
+        dragDir *= dragConstant * speedSq;
+        
+        return dragDir;
     }
     
     public void GetCameraRotationInput(InputAction.CallbackContext context)
@@ -200,21 +229,18 @@ public class GolfController : MonoBehaviour
         {
             transform.position = _oldTransformPosition;
         }
-        
-        _lineProjection.CalculateTrajectory(_currentMaxForce, Direction, _ballCollider, _ballRb);
+
+        _lineProjection.CalculateTrajectory(_currentMaxForce, Direction, _ballCollider, _ballRb, _shouldLob);
     }
 
     public void StartPlayerTurn()
     {
+        Debug.Log($"{PlayerIndex}: Starting turn");
         SetPlayerTurn(true);
     }
     public void EndPlayerTurn()
     {
-        _ballRb.isKinematic = true;
-        transform.rotation = Quaternion.Euler(_directionAngles);
-        _ballRb.isKinematic = false;
-        _hasShot = false;
-        
+        Debug.Log($"{PlayerIndex}: Ending turn");
         SetPlayerTurn(false);
     }
 
@@ -223,6 +249,11 @@ public class GolfController : MonoBehaviour
         _input.enabled = value;
         _lineProjection.LineEnabled(value);
         _uiHandler.SetUIActive(value);
+        
+        _ballRb.isKinematic = true;
+        transform.rotation = Quaternion.Euler(_directionAngles);
+        _ballRb.isKinematic = false;
+        _hasShot = false;
     }
     
     private void OnTriggerEnter(Collider other)
@@ -232,10 +263,6 @@ public class GolfController : MonoBehaviour
             OnWin?.Invoke(PlayerIndex);
             _ballRb.detectCollisions = false;
             _ballRb.isKinematic = true;
-        }
-        else if (other.CompareTag("Enemy"))
-        {
-            other.GetComponent<Enemy>().HandleDeath(this);
         }
     }
 

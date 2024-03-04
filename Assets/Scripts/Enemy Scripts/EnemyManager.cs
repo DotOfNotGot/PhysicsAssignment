@@ -30,7 +30,6 @@ public class EnemyManager : MonoBehaviour
         {
             if (Physics.Raycast(deadEnemy.transform.position + Vector3.up * 2, Vector3.down, out var raycastHit, 100, _layerMask))
             {
-                Debug.Log("Where goal");
                 Instantiate(_goalPrefab, raycastHit.point, _enemies[0].transform.rotation);
             }
             

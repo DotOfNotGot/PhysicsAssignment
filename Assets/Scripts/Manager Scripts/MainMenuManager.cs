@@ -21,7 +21,10 @@ public class MainMenuManager : MonoBehaviour
     // Start is called before the first frame update
     void Awake()
     {
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
         _canvas = GetComponent<Canvas>();
+        _gameManager = _gameManager.CheckForSingleton();
     }
 
     public void SetPlayerCount(int amount)
@@ -64,6 +67,7 @@ public class MainMenuManager : MonoBehaviour
 
     private void InitializeGameManager()
     {
+        Debug.Log("Main menu init game manager");
         _gameManager.Init(PlayerCount, _chosenLevelSequence);
     }
     

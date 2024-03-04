@@ -312,10 +312,7 @@ MonoBehaviour:
   maxLobForce: 10
   lobAngle: 45
   rotationSpeed: 50
-  _debugBumperPos: {x: 0, y: 0, z: 0}
-  _debugBumperNormal: {x: 0, y: 0, z: 0}
-  _debugBumpDir: {x: 0, y: 0, z: 0}
-  _positionAtBump: {x: 0, y: 0, z: 0}
+  drag: 0.1
 --- !u!114 &612118763741083302
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -360,7 +357,7 @@ Rigidbody:
   m_GameObject: {fileID: 6220722971444692077}
   serializedVersion: 4
   m_Mass: 1
-  m_Drag: 1
+  m_Drag: 0
   m_AngularDrag: 0.05
   m_CenterOfMass: {x: 0, y: 0, z: 0}
   m_InertiaTensor: {x: 1, y: 1, z: 1}
